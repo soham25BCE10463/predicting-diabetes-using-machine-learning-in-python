@@ -1,0 +1,53 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+data = {
+    'Pregnancies': [6, 1, 8, 1, 0, 5, 3, 10, 2, 8],
+    'Glucose': [148, 85, 183, 89, 137, 116, 78, 115, 197, 125],
+    'BloodPressure': [72, 66, 64, 66, 40, 74, 50, 0, 70, 96],
+    'SkinThickness': [35, 29, 0, 23, 35, 0, 32, 0, 45, 0],
+    'Insulin': [0, 0, 0, 94, 168, 0, 88, 0, 543, 0],
+    'BMI': [33.6, 26.6, 23.3, 28.1, 43.1, 25.6, 31.0, 35.3, 30.5, 0.0],
+    'DiabetesPedigreeFunction': [0.627, 0.351, 0.672, 0.167, 2.288, 0.201, 0.248, 0.134, 0.158, 0.232],
+    'Age': [50, 31, 32, 21, 33, 30, 26, 29, 53, 54],
+    'Outcome': [1, 0, 1, 0, 1, 0, 1, 0, 1, 1]}
+df = pd.DataFrame(data)
+print("--- Initial Data Snapshot ---")
+print(df.head())
+print("-" * 35)
+cols_to_replace_zeros = ['Glucose', 'BloodPressure', 'SkinThickness', 'BMI', 'Insulin']
+df[cols_to_replace_zeros] = df[cols_to_replace_zeros].replace(0, np.nan)
+for col in cols_to_replace_zeros:
+    df[col] = df[col].fillna(df[col].median())
+X = df.drop('Outcome', axis=1)
+y = df['Outcome']
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42, stratify=y)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+print("--- Model Evaluation (Random Forest) ---")
+print(f"Accuracy: **{accuracy_score(y_test, y_pred):.4f}**")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred, zero_division=0))
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+print("-" * 35)
+print("--- Example Prediction ---")
+new_patient_data = pd.DataFrame({
+    'Pregnancies': [3], 'Glucose': [160], 'BloodPressure': [75],
+    'SkinThickness': [30], 'Insulin': [150], 'BMI': [35],
+    'DiabetesPedigreeFunction': [0.5], 'Age': [45]})
+new_patient_scaled = scaler.transform(new_patient_data)
+new_patient_scaled_df = pd.DataFrame(new_patient_scaled, columns=X.columns)
+prediction = model.predict(new_patient_scaled_df)
+if prediction[0] == 1:
+     print("Prediction for new patient: **Diabetic (Class 1)**")
+else:
+     print("Prediction for new patient: **Non-Diabetic (Class 0)**")
